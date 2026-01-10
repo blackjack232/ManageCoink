@@ -1,10 +1,6 @@
 ﻿using Dapper;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UserManage.Application.Interface.Repository;
+using UserManage.Domain.Dtos;
 using UserManage.Domain.Entities;
 using UserManage.Infrastructure.Interface;
 
@@ -14,32 +10,32 @@ namespace UserManage.Infrastructure.Repositories
     {
         private readonly IDbConnectionFactory _connectionFactory = connectionFactory;
 
-        public async Task<(int Id, string Message, bool Success)> RegistrarUsuarioAsync(string nombre, string telefono, long paisId, long departamentoId, long municipioId, string direccion)
+        public async Task<(long id, string mensaje, bool exitoso)> CrearUsuario(ReqUsuarioDto req)
         {
             using var connection = _connectionFactory.CreateConnection();
 
             var result = await connection.QueryFirstAsync<SpRegistrarUsuarioResult>(
-                "SELECT * FROM sp_registrar_usuario(@p_nombre, @p_telefono, @p_pais_id, @p_departamento_id, @p_municipio_id, @p_direccion)",
+                "SELECT * FROM sp_crear_usuario(@p_nombre, @p_telefono, @p_pais_id, @p_departamento_id, @p_municipio_id, @p_direccion)",
                 new
                 {
-                    p_nombre = nombre,
-                    p_telefono = telefono,
-                    p_pais_id = paisId,
-                    p_departamento_id = departamentoId,
-                    p_municipio_id = municipioId,
-                    p_direccion = direccion
+                    p_nombre = req.Nombre,
+                    p_telefono = req.Telefono,
+                    p_pais_id = req.PaisId,
+                    p_departamento_id = req.DepartamentoId,
+                    p_municipio_id = req.MunicipioId,
+                    p_direccion = req.Direccion
                 }
             );
 
             return (result.Id, result.Mensaje, result.Exitoso);
         }
 
-        public async Task<Usuario?> ObtenerUsuarioPorIdAsync(int id)
+        public async Task<Usuario?> ObtenerUsuarioById(long id)
         {
             using var connection = _connectionFactory.CreateConnection();
 
             var usuario = await connection.QueryFirstOrDefaultAsync<Usuario>(
-                "SELECT * FROM sp_obtener_usuario_por_id(@p_usuario_id)",
+                "SELECT * FROM sp_obtener_usuario_by_id(@p_usuario_id)",
                 new { p_usuario_id = id }
             );
 

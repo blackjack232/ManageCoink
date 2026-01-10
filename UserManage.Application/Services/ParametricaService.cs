@@ -1,24 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UserManage.Application.Interface.Repository;
+﻿using UserManage.Application.Interface.Repository;
 using UserManage.Application.Interface.Service;
 using UserManage.Domain.Common;
 using UserManage.Domain.Entities;
 
 namespace UserManage.Application.Services
 {
-    public class ParametricaService(IParametricaRepository parametricaRepository) : IParametricaService
+    public class ParametricaService(IParametricaRepository repository) : IParametricaService
     {
-        private readonly IParametricaRepository _parametricaRepository = parametricaRepository;
+        private readonly IParametricaRepository _repository = repository;
 
-        public async Task<Result<IEnumerable<Pais>>> ObtenerPaisesAsync()
+        public async Task<Result<IEnumerable<Pais>>> ObtenerPais()
         {
             try
             {
-                var paises = await _parametricaRepository.ObtenerPaisesAsync();
+                var paises = await _repository.ObtenerPais();
                 return Result<IEnumerable<Pais>>.SuccessResult(paises);
             }
             catch (Exception ex)
@@ -27,16 +22,16 @@ namespace UserManage.Application.Services
             }
         }
 
-        public async Task<Result<IEnumerable<Departamento>>> ObtenerDepartamentosAsync(int paisId)
+        public async Task<Result<IEnumerable<Departamento>>> ObtenerDepartamento(long paisId)
         {
             if (paisId <= 0)
             {
-                return Result<IEnumerable<Departamento>>.FailureResult("El ID del país debe ser mayor a 0");
+                return Result<IEnumerable<Departamento>>.FailureResult("El ID del pais debe ser mayor a 0");
             }
 
             try
             {
-                var departamentos = await _parametricaRepository.ObtenerDepartamentosPorPaisAsync(paisId);
+                var departamentos = await _repository.ObtenerDepartamentosByPais(paisId);
                 return Result<IEnumerable<Departamento>>.SuccessResult(departamentos);
             }
             catch (Exception ex)
@@ -45,7 +40,7 @@ namespace UserManage.Application.Services
             }
         }
 
-        public async Task<Result<IEnumerable<Municipio>>> ObtenerMunicipiosAsync(int departamentoId)
+        public async Task<Result<IEnumerable<Municipio>>> ObtenerMunicipio(long departamentoId)
         {
             if (departamentoId <= 0)
             {
@@ -54,7 +49,7 @@ namespace UserManage.Application.Services
 
             try
             {
-                var municipios = await _parametricaRepository.ObtenerMunicipiosPorDepartamentoAsync(departamentoId);
+                var municipios = await _repository.ObtenerMunicipioByDepartamento(departamentoId);
                 return Result<IEnumerable<Municipio>>.SuccessResult(municipios);
             }
             catch (Exception ex)

@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UserManage.Domain.Dtos;
+﻿using UserManage.Domain.Dtos;
 
 namespace UserManage.Application.Vlidators
 {

@@ -1,13 +1,15 @@
 using Microsoft.AspNetCore.Mvc;
 using UserManage.Application.Interface.Service;
 using UserManage.Domain.Dtos;
+
 namespace UserManage.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class UsuariosController(IUsuarioService usuarioService) : ControllerBase
+public class UsuariosController(IUsuarioService service, ILogger<UsuariosController> log) : ControllerBase
 {
-    private readonly IUsuarioService _usuarioService = usuarioService;
+    private readonly IUsuarioService _service = service;
+    private readonly ILogger<UsuariosController> _log = log;
 
     /// <summary>
     /// Registra un nuevo usuario
@@ -15,30 +17,78 @@ public class UsuariosController(IUsuarioService usuarioService) : ControllerBase
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> RegistrarUsuario([FromBody] ReqUsuarioDto dto)
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> CrearUsuario([FromBody] ReqUsuarioDto req)
     {
-        var result = await _usuarioService.RegistrarUsuarioAsync(dto);
-
-        if (!result.Success)
+        try
         {
+            if (!ModelState.IsValid)
+            {
+                _log.LogWarning("Validacion de modelo fallida al crear usuario. Errores: {Errors}", string.Join(", ", ModelState.Values));
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Datos de entrada invalidos",
+                    errors = ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage)
+                        .ToList()
+                });
+
+            }
+            if (req == null)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "El cuerpo de la solicitud no puede estar vacio"
+                });
+            }
+
+            var result = await _service.CrearUsuario(req);
+
+            if (!result.Success)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = result.Message,
+                    errors = result.Errors
+                });
+            }
+
+            return CreatedAtAction(
+                nameof(ObtenerUsuarioById),
+                new { id = result.Data!.Id },
+                new
+                {
+                    success = true,
+                    message = result.Message,
+                    data = result.Data
+                }
+            );
+        }
+        catch (ArgumentException ex)
+        {
+            _log.LogError(ex, "Error de argumento al crear usuario. Nombre: {Nombre}", req?.Nombre ?? "N/A");
+
             return BadRequest(new
             {
                 success = false,
-                message = result.Message,
-                errors = result.Errors
+                message = "Error en los argumentos proporcionados",
+                error = ex.Message
             });
         }
-
-        return CreatedAtAction(
-            nameof(ObtenerUsuarioPorId),
-            new { id = result.Data!.Id },
-            new
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Error interno al crear usuario. Nombre: {Nombre}, Excepción: {ExceptionType}", req?.Nombre ?? "N/A", ex.GetType().Name);
+            return StatusCode(StatusCodes.Status500InternalServerError, new
             {
-                success = true,
-                message = result.Message,
-                data = result.Data
-            }
-        );
+                success = false,
+                message = "Ha ocurrido un error interno en el servidor",
+                error = ex.Message
+            });
+        }
     }
 
     /// <summary>
@@ -46,24 +96,50 @@ public class UsuariosController(IUsuarioService usuarioService) : ControllerBase
     /// </summary>
     [HttpGet("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> ObtenerUsuarioPorId(int id)
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> ObtenerUsuarioById(long id)
     {
-        var result = await _usuarioService.ObtenerUsuarioPorIdAsync(id);
-
-        if (!result.Success)
+        try
         {
-            return NotFound(new
+            if (id <= 0)
             {
-                success = false,
-                message = result.Message
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "El ID debe ser un numero mayor a 0"
+                });
+            }
+
+            var result = await _service.ObtenerUsuarioById(id);
+
+            if (!result.Success)
+            {
+                _log.LogWarning("Usuario no encontrado. ID: {UserId}, Mensaje: {Message}", id, result.Message);
+                return NotFound(new
+                {
+                    success = false,
+                    message = result.Message
+                });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                data = result.Data
             });
         }
-
-        return Ok(new
+        catch (Exception ex)
         {
-            success = true,
-            data = result.Data
-        });
+            _log.LogError(ex, "Error interno al obtener usuario. ID: {UserId}, Excepcion: {ExceptionType}", id, ex.GetType().Name);
+
+            return StatusCode(StatusCodes.Status500InternalServerError, new
+            {
+                success = false,
+                message = "Ha ocurrido un error interno en el servidor",
+                error = ex.Message
+            });
+        }
     }
 }
