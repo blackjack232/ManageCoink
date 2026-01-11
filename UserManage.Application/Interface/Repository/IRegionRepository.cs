@@ -2,7 +2,7 @@
 
 namespace UserManage.Application.Interface.Repository
 {
-    public interface IParametricaRepository
+    public interface IRegionRepository
     {
         Task<IEnumerable<Pais>> ObtenerPais();
         Task<IEnumerable<Departamento>> ObtenerDepartamentosByPais(long paisId);

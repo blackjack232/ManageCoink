@@ -1,32 +1,10 @@
-//var builder = WebApplication.CreateBuilder(args);
 
-//// Add services to the container.
-
-//builder.Services.AddControllers();
-//// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-//builder.Services.AddEndpointsApiExplorer();
-//builder.Services.AddSwaggerGen();
-
-//var app = builder.Build();
-
-//// Configure the HTTP request pipeline.
-//if (app.Environment.IsDevelopment())
-//{
-//    app.UseSwagger();
-//    app.UseSwaggerUI();
-//}
-
-//app.UseHttpsRedirection();
-
-//app.UseAuthorization();
-
-//app.MapControllers();
-
-//app.Run();
 using UserManage.Application.Interface.Repository;
 using UserManage.Application.Interface.Service;
 using UserManage.Application.Services;
+using UserManage.Domain.Constants;
 using UserManage.Infrastructure.Data;
+using UserManage.Infrastructure.Helpers;
 using UserManage.Infrastructure.Interface;
 using UserManage.Infrastructure.Repositories;
 
@@ -44,17 +22,20 @@ builder.Services.AddSwaggerGen(c =>
         Description = "API para gestión de usuarios con PostgreSQL"
     });
 });
+var encodedConnectionString = builder.Configuration.GetConnectionString("CoinkDb")
+    ?? throw new InvalidOperationException(
+        string.Format(InfrastructureMessages.ConnectionStringNotConfigured, "CoinkDb")
+    );
 
-var connectionString = builder.Configuration.GetConnectionString("CoinkDb")
-    ?? throw new InvalidOperationException("la conexion a la base de datos de 'CoinkDb' no fue establecida.");
+var connectionString = ConnectionStringDecoder.Decode(encodedConnectionString, Console.WriteLine);
 
 builder.Services.AddSingleton<IDbConnectionFactory>(sp =>
     new PostgresConnectionFactory(connectionString));
 
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
-builder.Services.AddScoped<IParametricaRepository, ParametricaRepository>();
+builder.Services.AddScoped<IRegionRepository, RegionRepository>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
-builder.Services.AddScoped<IParametricaService, ParametricaService>();
+builder.Services.AddScoped<IRegionService, RegionService>();
 
 builder.Services.AddCors(options =>
 {

@@ -3,7 +3,7 @@ using UserManage.Domain.Entities;
 
 namespace UserManage.Application.Interface.Service
 {
-    public interface IParametricaService
+    public interface IRegionService
     {
         Task<Result<IEnumerable<Pais>>> ObtenerPais();
         Task<Result<IEnumerable<Departamento>>> ObtenerDepartamento(long paisId);

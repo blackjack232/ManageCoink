@@ -1,12 +1,13 @@
-﻿using UserManage.Application.Interface.Repository;
+﻿
+using UserManage.Application.Interface.Repository;
 using UserManage.Application.Interface.Service;
 using UserManage.Application.Vlidators;
 using UserManage.Domain.Common;
+using UserManage.Domain.Constants;
 using UserManage.Domain.Dtos;
 using UserManage.Domain.Entities;
-
-
 namespace UserManage.Application.Services;
+
 /// <summary>
 /// Servicio para la gestión de usuarios.
 /// Proporciona operaciones de creación, consulta y mantenimiento de usuarios del sistema.
@@ -33,7 +34,7 @@ public class UsuarioService(IUsuarioRepository repository) : IUsuarioService
         if (validationErrors.Count != 0)
         {
             return Result<UsuarioResponseDto>.FailureResult(
-                "Error de validacion",
+                AppMessages.ErrorValidacion,
                 validationErrors
             );
         }
@@ -48,20 +49,23 @@ public class UsuarioService(IUsuarioRepository repository) : IUsuarioService
             }
 
             var usuario = await _repository.ObtenerUsuarioById(id);
+
             if (usuario == null)
             {
-                return Result<UsuarioResponseDto>.FailureResult("Usuario registrado pero no se pudo recuperar");
+                return Result<UsuarioResponseDto>.FailureResult(AppMessages.UsuarioRegistradoNoRecuperado);
             }
 
             var response = MapToResponseDto(usuario);
-
             return Result<UsuarioResponseDto>.SuccessResult(response, mensaje);
         }
         catch (Exception ex)
         {
-            return Result<UsuarioResponseDto>.FailureResult($"Error interno: {ex.Message}");
+            return Result<UsuarioResponseDto>.FailureResult(
+                string.Format(AppMessages.ErrorInternoPrefijo, ex.Message)
+            );
         }
     }
+
     /// <summary>
     /// Obtiene un usuario por su identificador único.
     /// </summary>
@@ -74,7 +78,7 @@ public class UsuarioService(IUsuarioRepository repository) : IUsuarioService
     {
         if (id <= 0)
         {
-            return Result<UsuarioResponseDto>.FailureResult("El ID debe ser mayor a 0");
+            return Result<UsuarioResponseDto>.FailureResult(AppMessages.IdMayorCero);
         }
 
         try
@@ -83,7 +87,7 @@ public class UsuarioService(IUsuarioRepository repository) : IUsuarioService
 
             if (usuario == null)
             {
-                return Result<UsuarioResponseDto>.FailureResult("Usuario no encontrado");
+                return Result<UsuarioResponseDto>.FailureResult(AppMessages.UsuarioNoEncontrado);
             }
 
             var response = MapToResponseDto(usuario);
@@ -91,15 +95,17 @@ public class UsuarioService(IUsuarioRepository repository) : IUsuarioService
         }
         catch (Exception ex)
         {
-            return Result<UsuarioResponseDto>.FailureResult($"Error interno: {ex.Message}");
+            return Result<UsuarioResponseDto>.FailureResult(
+                string.Format(AppMessages.ErrorInternoPrefijo, ex.Message)
+            );
         }
     }
 
     /// <summary>
-    /// Mapea un usuario a su DTO de respuesta
+    /// Mapea una entidad Usuario a su DTO de respuesta.
     /// </summary>
-    /// <param name="usuario">Entidad Usuario</param>
-    /// <returns>UsuarioResponseDto</returns>
+    /// <param name="usuario">Entidad Usuario a mapear</param>
+    /// <returns>DTO de respuesta con los datos del usuario</returns>
     private static UsuarioResponseDto MapToResponseDto(Usuario usuario)
     {
         return new UsuarioResponseDto(
@@ -113,5 +119,4 @@ public class UsuarioService(IUsuarioRepository repository) : IUsuarioService
             usuario.FechaCreacion
         );
     }
-
 }
